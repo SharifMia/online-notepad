@@ -2,34 +2,46 @@
 // action.php
 require 'db.php';
 
-// নোট সেভ বা আপডেট করার লজিক
+// Logic for Saving or Updating a Note
 if (isset($_POST['save'])) {
     $id = $_POST['id'] ?? null;
     $title = trim($_POST['title']);
     $content = trim($_POST['content']);
 
-    // খালি ইনপুট চেক করা
+    // Check for empty inputs
     if (!empty($title) && !empty($content)) {
         if (!empty($id)) {
-            // আপডেট (Update) লজিক
-            $stmt = $pdo->prepare("UPDATE notes SET title = ?, content = ? WHERE id = ?");
-            $stmt->execute([$title, $content, $id]);
+            // Update Logic (Using MySQLi Prepared Statement)
+            $stmt = $conn->prepare("UPDATE notes SET title = ?, content = ? WHERE id = ?");
+            // "ssi" means: String, String, Integer
+            $stmt->bind_param("ssi", $title, $content, $id);
+            $stmt->execute();
+            $stmt->close();
         } else {
-            // নতুন সেভ (Create) লজিক
-            $stmt = $pdo->prepare("INSERT INTO notes (title, content) VALUES (?, ?)");
-            $stmt->execute([$title, $content]);
+            // Create New Logic (Using MySQLi Prepared Statement)
+            $stmt = $conn->prepare("INSERT INTO notes (title, content) VALUES (?, ?)");
+            // "ss" means: String, String
+            $stmt->bind_param("ss", $title, $content);
+            $stmt->execute();
+            $stmt->close();
         }
     }
+    // Redirect back to home
     header("Location: index.php");
     exit;
 }
 
-// নোট ডিলেট করার লজিক
+// Logic for Deleting a Note
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
-    $stmt = $pdo->prepare("DELETE FROM notes WHERE id = ?");
-    $stmt->execute([$id]);
     
+    $stmt = $conn->prepare("DELETE FROM notes WHERE id = ?");
+    // "i" means: Integer
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+    
+    // Redirect back to home
     header("Location: index.php");
     exit;
 }
