@@ -2,17 +2,29 @@
 // index.php
 require 'db.php';
 
-// যদি 'Edit' বাটনে ক্লিক করা হয়, তাহলে ওই নোটের ডেটা ফর্মে দেখানোর জন্য তুলে আনা
+// If 'Edit' button is clicked, fetch the specific note data to populate the form
 $edit_note = null;
 if (isset($_GET['edit'])) {
-    $stmt = $pdo->prepare("SELECT * FROM notes WHERE id = ?");
-    $stmt->execute([$_GET['edit']]);
-    $edit_note = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $conn->prepare("SELECT * FROM notes WHERE id = ?");
+    $stmt->bind_param("i", $_GET['edit']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $edit_note = $result->fetch_assoc();
+    }
+    $stmt->close();
 }
 
-// ডেটাবেস থেকে সব নোট তুলে আনা (নতুন নোটগুলো আগে দেখাবে)
-$stmt = $pdo->query("SELECT * FROM notes ORDER BY created_at DESC");
-$notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Fetch all notes from the database (Newest first)
+$sql = "SELECT * FROM notes ORDER BY created_at DESC";
+$result = $conn->query($sql);
+
+$notes = [];
+if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $notes[] = $row;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -32,7 +44,7 @@ $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <div class="form-container">
             <form action="action.php" method="POST">
-                <input type="hidden" name="id" value="<?= $edit_note['id'] ?? '' ?>">
+                <input type="hidden" name="id" value="<?= htmlspecialchars($edit_note['id'] ?? '') ?>">
                 
                 <input type="text" name="title" placeholder="Note Title..." 
                        value="<?= htmlspecialchars($edit_note['title'] ?? '') ?>" required>
